@@ -1,6 +1,8 @@
 
 import { Kafka } from 'kafkajs';
 import {PrismaClient} from "@prisma/client"
+import { JsonObject } from '@prisma/client/runtime/library';
+import {parse} from "./parser"
 
 const TOPIC_NAME = "zap-events"
 const prismaClient = new PrismaClient();
@@ -55,12 +57,21 @@ async function main(){
                 console.log("Current Action not found");
                 return
             }
-
+            const zapRunMetadata = zapRunDetails?.metadata;
             if( currentAction.type.id === "email"){
-                console.log("sending email")
+               
+                const body = parse((currentAction.metadata as JsonObject)?.body as string, zapRunMetadata);
+                const to = parse((currentAction.metadata as JsonObject)?.email as string, zapRunMetadata);
+                console.log(`sending out email to ${to} and body is ${body}`)
+                console.log("sending email");
+                
             }
 
             if(currentAction.type.id === "sol"){
+                
+                const amount = parse((currentAction.metadata as JsonObject)?.amount as string, zapRunMetadata);
+                const address = parse((currentAction.metadata as JsonObject)?.address as string, zapRunMetadata);
+                console.log(`sending out solana to ${address} and amount is ${amount}`)
                 console.log("sending sol")
             }
 

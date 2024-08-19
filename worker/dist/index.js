@@ -11,6 +11,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const kafkajs_1 = require("kafkajs");
 const client_1 = require("@prisma/client");
+const parser_1 = require("./parser");
 const TOPIC_NAME = "zap-events";
 const prismaClient = new client_1.PrismaClient();
 const kafka = new kafkajs_1.Kafka({
@@ -27,6 +28,7 @@ function main() {
         yield consumer.run({
             autoCommit: false,
             eachMessage: (_a) => __awaiter(this, [_a], void 0, function* ({ topic, partition, message }) {
+                var _b, _c, _d, _e;
                 console.log({
                     partition,
                     offset: message.offset,
@@ -56,10 +58,17 @@ function main() {
                     console.log("Current Action not found");
                     return;
                 }
+                const zapRunMetadata = zapRunDetails === null || zapRunDetails === void 0 ? void 0 : zapRunDetails.metadata;
                 if (currentAction.type.id === "email") {
+                    const body = (0, parser_1.parse)((_b = currentAction.metadata) === null || _b === void 0 ? void 0 : _b.body, zapRunMetadata);
+                    const to = (0, parser_1.parse)((_c = currentAction.metadata) === null || _c === void 0 ? void 0 : _c.email, zapRunMetadata);
+                    console.log(`sending out email to ${to} and body is ${body}`);
                     console.log("sending email");
                 }
                 if (currentAction.type.id === "sol") {
+                    const amount = (0, parser_1.parse)((_d = currentAction.metadata) === null || _d === void 0 ? void 0 : _d.amount, zapRunMetadata);
+                    const address = (0, parser_1.parse)((_e = currentAction.metadata) === null || _e === void 0 ? void 0 : _e.address, zapRunMetadata);
+                    console.log(`sending out solana to ${address} and amount is ${amount}`);
                     console.log("sending sol");
                 }
                 yield new Promise(r => setTimeout(r, 1000));
