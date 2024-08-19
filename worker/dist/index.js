@@ -1,4 +1,5 @@
 "use strict";
+// require('dotenv').config();
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -11,7 +12,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const kafkajs_1 = require("kafkajs");
 const client_1 = require("@prisma/client");
-const parser_1 = require("./parser");
+// import { sendEmail } from "./email";
+// import { sendSol } from "./solana";
 const TOPIC_NAME = "zap-events";
 const prismaClient = new client_1.PrismaClient();
 const kafka = new kafkajs_1.Kafka({
@@ -28,13 +30,14 @@ function main() {
         yield consumer.run({
             autoCommit: false,
             eachMessage: (_a) => __awaiter(this, [_a], void 0, function* ({ topic, partition, message }) {
-                var _b, _c, _d, _e;
+                var _b, _c, _d;
                 console.log({
                     partition,
                     offset: message.offset,
-                    value: message.value.toString(),
+                    value: (_b = message.value) === null || _b === void 0 ? void 0 : _b.toString(),
                 });
-                const parsedValue = JSON.parse(message.value.toString());
+                //@ts-ignore
+                const parsedValue = JSON.parse((_c = message.value) === null || _c === void 0 ? void 0 : _c.toString());
                 const zapRunId = parsedValue.zapRunId;
                 const stage = parsedValue.stage;
                 const zapRunDetails = yield prismaClient.zapRun.findFirst({
@@ -60,19 +63,21 @@ function main() {
                 }
                 const zapRunMetadata = zapRunDetails === null || zapRunDetails === void 0 ? void 0 : zapRunDetails.metadata;
                 if (currentAction.type.id === "email") {
-                    const body = (0, parser_1.parse)((_b = currentAction.metadata) === null || _b === void 0 ? void 0 : _b.body, zapRunMetadata);
-                    const to = (0, parser_1.parse)((_c = currentAction.metadata) === null || _c === void 0 ? void 0 : _c.email, zapRunMetadata);
-                    console.log(`sending out email to ${to} and body is ${body}`);
+                    // const body = parse((currentAction.metadata as JsonObject)?.body as string, zapRunMetadata);
+                    // const to = parse((currentAction.metadata as JsonObject)?.email as string, zapRunMetadata);
+                    // console.log(`sending out email to ${to} and body is ${body}`)
                     console.log("sending email");
+                    // await sendEmail(to, body);
                 }
                 if (currentAction.type.id === "sol") {
-                    const amount = (0, parser_1.parse)((_d = currentAction.metadata) === null || _d === void 0 ? void 0 : _d.amount, zapRunMetadata);
-                    const address = (0, parser_1.parse)((_e = currentAction.metadata) === null || _e === void 0 ? void 0 : _e.address, zapRunMetadata);
-                    console.log(`sending out solana to ${address} and amount is ${amount}`);
+                    // const amount = parse((currentAction.metadata as JsonObject)?.amount as string, zapRunMetadata);
+                    // const address = parse((currentAction.metadata as JsonObject)?.address as string, zapRunMetadata);
+                    // console.log(`sending out solana to ${address} and amount is ${amount}`)
                     console.log("sending sol");
+                    // await sendSol(to, amount);
                 }
                 yield new Promise(r => setTimeout(r, 1000));
-                const zapId = message.value.toString();
+                const zapId = (_d = message.value) === null || _d === void 0 ? void 0 : _d.toString();
                 const lastStage = ((zapRunDetails === null || zapRunDetails === void 0 ? void 0 : zapRunDetails.zap.actions.length) || 1) - 1;
                 if (lastStage !== stage) {
                     yield producer.send({
